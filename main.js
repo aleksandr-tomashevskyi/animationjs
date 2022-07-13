@@ -1,22 +1,12 @@
 'use strict'
 
 const boxElements = document.querySelectorAll(".box");
-// const boxWidth = boxElement.offsetWidth;
-// const boxHeight = boxElement.offsetHeight;
-// let boxInitXPos = 0;
-// let boxInitYPos = 0;
-// let boxVelocityX = 0.1;
-// let boxVelocityY = 0.2;
-// let boxXPos;
-// let boxYPos;
-// let startTimeX = (new Date()).getTime();
-// let currentTimeX = (new Date()).getTime() - startTimeX;
-// let startTimeY = (new Date()).getTime();
-// let currentTimeY = (new Date()).getTime() - startTimeY;
 let containerWidth = window.innerWidth;
 let containerHeight = window.innerHeight;
 let generatedInitPositionsX = [];
 let generatedInitPositionsY = [];
+let boxes = [];
+
 
 class box{
    constructor(index, className, height, width, velocityY, velocityX, initPosX, initPosY, startTimeX, startTimeY, posX, posY, currentTimeX, currentTimeY){
@@ -40,72 +30,81 @@ class box{
 // let redBox = new box(boxElement.offsetHeight, boxElement.offsetWidth, 0.1, 0.2, 0, 0, (new Date()).getTime(), (new Date()).getTime());
 
 function generateAndRoundVelocity(){
-   return Number((Math.random()*0.1)+0.1).toFixed(2);
+   let newVelocity = Number((Math.random()*0.1)+0.1).toFixed(2);
+   return newVelocity;
 }
 
-function initPosSetX(){
-   let newIter;
-   newIter = Math.round((Math.random()*0.5*containerWidth));
-   let newIterChecked = generatedInitPositionsX.find((element) => {
-      return Math.abs(element - newIter) < 150;
-   })
-   if(!newIterChecked){
-      return newIter;
-   } else{
-      initPosSetX()
+function checkCollision(redBox, el){
+   let checkResult = false;
+   if(redBox.index != el.index){
+      if(((redBox.initPosX + redBox.width >= el.initPosX && redBox.initPosX <= el.initPosX + el.width) && redBox.initPosY + redBox.height >= el.initPosY && redBox.initPosY <= el.initPosY + el.height)){
+         checkResult = true;
+      }
+      if(redBox.initPosX + redBox.width >= containerWidth || redBox.initPosX <= 0 || redBox.initPosY + redBox.height >= containerHeight|| redBox.initPosY <= 0){
+         console.log("Check for container failed")
+         checkResult = true;
+      }
    }
-}
-function initPosSetY(){
-   let newIter;
-   newIter = Math.round((Math.random()*0.5*containerWidth));
-   let newIterChecked = generatedInitPositionsY.find((element) => {
-      return Math.abs(element - newIter) < 200;
-   })
-   if(!newIterChecked){
-      return newIter;
-   } else{
-      initPosSetY()
-   }
+   return checkResult;
 }
 
-function generateInitPosX(){
-   let newIter;
-   if(generatedInitPositionsX){
-      newIter = initPosSetX();
-   } else{
-      newIter = Math.round((Math.random()*0.5*containerWidth))
-   }
-   return newIter;
-}
-function generateInitPosY(){
-   let newIter;
-   if(generatedInitPositionsY){
-      newIter = initPosSetY();
-   } else{
-      newIter = Math.round((Math.random()*0.5*containerWidth))
-   }
-   return newIter;
+// function initPosSetX(width, height, posIterY){
+//    let newIter;
+//    let newIterChecked;
+//    newIter = Math.round((Math.random()*containerWidth));
+//    return newIter;
+// }
+// function initPosSetY(height){
+//    let newIter;
+//    newIter = Math.round((Math.random()*containerHeight));
+//    return newIter;
+// }
+
+function generateInitPos(containerParam){
+   return Math.round((Math.random()*containerParam));   
 }
 
-console.log(generateInitPosX())
-console.log(generateInitPosY())
 
-let boxes = [];
 
 function boxInstance(el, i){
    let newClassName = `box-${i}`;
    el.classList.toggle(newClassName);
    let varNameIndex = `${i}`;
-   boxes.push(new box(i, newClassName, el.offsetHeight, el.offsetWidth, generateAndRoundVelocity(), generateAndRoundVelocity(), generateInitPosX(), generateInitPosY(), (new Date()).getTime(), (new Date()).getTime()));
-   
-   // boxes.push(eval('box'+ varNameIndex))
+   boxes.push(new box(i, newClassName, el.offsetHeight, el.offsetWidth, generateAndRoundVelocity(), generateAndRoundVelocity(), generateInitPos(containerWidth), generateInitPos(containerHeight), (new Date()).getTime(), (new Date()).getTime()));
 }
 
-boxElements.forEach(boxInstance)
-console.log(boxes)
+function checkInitsForCollisions(){
+   let checkResult = true;
+   console.log(boxes)
+   boxes.forEach((redBox, iR)=>{
+      console.log("check")
+      boxes.forEach((el, i)=>{
+         if(checkCollision(redBox, el)){
+            redBox.initPosX = generateInitPos(containerWidth);
+            redBox.initPosY = generateInitPos(containerHeight);
+            checkResult = false;
+            console.log(`Iteration ${i} failed check`)
+         }
+      })
+   })
+   return checkResult;
+}
 
 
-// let boxes = [new box(boxElement.offsetHeight, boxElement.offsetWidth, 0.1, 0.2, 0, 0, (new Date()).getTime(), (new Date()).getTime()), new box(boxElement.offsetHeight, boxElement.offsetWidth, 0.1, 0.2, 80, 120, (new Date()).getTime(), (new Date()).getTime()), new box(boxElement.offsetHeight, boxElement.offsetWidth, 0.1, 0.2, 300, 500, (new Date()).getTime(), (new Date()).getTime()), new box(boxElement.offsetHeight, boxElement.offsetWidth, 0.1, 0.2, 150, 180, (new Date()).getTime(), (new Date()).getTime())]
+function init(){
+   boxElements.forEach(boxInstance);
+   while(!checkInitsForCollisions()){
+      checkInitsForCollisions()
+   }
+   console.log(boxes)
+   boxes.forEach((redBox) =>{
+      console.log(redBox)
+      boxElements[redBox.index].style.transform=`translate(${redBox.initPosX}px, ${redBox.initPosY}px)`;
+   })
+}
+
+init();
+
 
 function boxMovement(){
    boxes.forEach((redBox) =>{
@@ -113,16 +112,10 @@ function boxMovement(){
       redBox.currentTimeY = (new Date()).getTime() - redBox.startTimeY; 
       redBox.posX = redBox.initPosX + (redBox.velocityX*redBox.currentTimeX);
       redBox.posY = redBox.initPosY + (redBox.velocityY*redBox.currentTimeY);
-      boxElements[redBox.index].style.transform=`translate(${redBox.posX}px, ${redBox.posY}px)`;
       collisionToContainer(redBox);
       collisionToOthers(redBox);
+      boxElements[redBox.index].style.transform=`translate(${redBox.posX}px, ${redBox.posY}px)`;
    })
-   // redBox.currentTimeX = (new Date()).getTime() - redBox.startTimeX; 
-   // redBox.currentTimeY = (new Date()).getTime() - redBox.startTimeY; 
-   // redBox.posX = redBox.initPosX + (redBox.velocityX*redBox.currentTimeX)
-   // redBox.posY = redBox.initPosY + (redBox.velocityY*redBox.currentTimeY);
-   // boxElement.style.transform=`translate(${redBox.posX}px, ${redBox.posY}px)`;
-   // collisionToContainer()
 }
 
 function collisionToContainer(redBox){
@@ -140,12 +133,10 @@ function collisionToContainer(redBox){
    }
 }
 
-// (redBox.posX <= el.posX + el.width && redBox.posX + redBox.width <= el.posX + el.width  && redBox.posY <= el.posY +el.height && redBox.posY + redBox.height <= el.posY + el.height)
-
 function collisionToOthers(redBox){
    boxes.forEach((el) =>{
       if(redBox.index != el.index){
-         if(((redBox.posX + redBox.width >= el.posX && redBox.posX <= el.posX + el.width && redBox.posX) && redBox.posY + redBox.height >= el.posY && redBox.posY <= el.posY + el.height)){
+         if(((redBox.posX + redBox.width >= el.posX && redBox.posX <= el.posX + el.width) && redBox.posY + redBox.height >= el.posY && redBox.posY <= el.posY + el.height)){
             if(Math.abs(redBox.posX - el.posX) < Math.abs(redBox.posY - el.posY)){
                redBox.initPosY = redBox.posY;
                redBox.startTimeY = (new Date()).getTime();
@@ -156,53 +147,9 @@ function collisionToOthers(redBox){
                redBox.velocityX = redBox.velocityX * (-1);
             }
          }
-         // if(el.posX + el.width >= redBox.posX && el.posX + el.width<= redBox.posX + redBox.width && el.posY + el.height >= redBox.posY && el.posY + el.height <= redBox.posY + redBox.height){
-         //    if(el.posX + el.width >= redBox.posX || el.posX <= redBox.posX + redBox.width){
-         //       console.log("collision X detected")
-         //       el.initPosY = el.posY;
-         //       el.startTimeY = (new Date()).getTime();
-         //       el.velocityY = el.velocityY * (-1);
-         //    }
-         //    if(el.posY + el.height >= redBox.posY || el.posY <= redoBox.posY + redBox.height){
-         //       console.log("collision Y detected")
-         //       el.initPosX = el.posX;
-         //       el.startTimeX = (new Date()).getTime();
-         //       el.velocityX = el.velocityX * (-1);
-         //    }
-         // }
-         // if(((redBox.posY + redBox.height) >= el.posY) && redBox.posY + redBox.height <= el.posY + el.height){
-         //    console.log("collision Y detected")
-         //    // redBox.initPosY = redBox.posY;
-         //    // redBox.startTimeY = (new Date()).getTime();
-         //    // redBox.velocityY = redBox.velocityY * (-1);
-         // }
       }
    })
    
 }
 
-
-// function boxMovement(){
-//    currentTimeX = (new Date()).getTime() - startTimeX; 
-//    currentTimeY = (new Date()).getTime() - startTimeY; 
-//    boxXPos = boxInitXPos + (boxVelocityX*currentTimeX)
-//    boxYPos = boxInitYPos + (boxVelocityY*currentTimeY);
-//    boxElement.style.transform=`translate(${boxXPos}px, ${boxYPos}px)`;
-//    collisionToContainer()
-// }
-
-// function collisionToContainer(){
-//    if(boxXPos + boxWidth >= containerWidth || boxXPos <= 0){
-//       boxInitXPos = boxXPos;
-//       startTimeX = (new Date()).getTime();
-//       boxVelocityX = boxVelocityX * (-1);
-//    }
-//    if(boxYPos + boxHeight >= containerHeight || boxYPos <= 0){
-//       boxInitYPos = boxYPos;
-//       startTimeY = (new Date()).getTime();
-//       boxVelocityY = boxVelocityY * (-1);
-//       console.log(boxVelocityY)
-//    }
-// }
-
-window.setInterval(boxMovement, 20);
+window.setInterval(boxMovement, 30);
