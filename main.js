@@ -138,11 +138,24 @@ function collisionToOthers(redBox){
       if(redBox.index != el.index){
          if(((redBox.posX + redBox.width >= el.posX && redBox.posX <= el.posX + el.width) && redBox.posY + redBox.height >= el.posY && redBox.posY <= el.posY + el.height)){
             if(Math.abs(redBox.posX - el.posX) < Math.abs(redBox.posY - el.posY)){
-               redBox.initPosY = redBox.posY;
+               let modifier;
+               if(redBox.posY + redBox.height >= el.posY && redBox.posY + redBox.height < el.posY + el.height){
+                  modifier = -4;
+               } else{
+                  modifier = 4;
+               }
+               redBox.initPosY = redBox.posY + modifier;
                redBox.startTimeY = (new Date()).getTime();
                redBox.velocityY = redBox.velocityY * (-1);
+               
             } else{
-               redBox.initPosX = redBox.posX;
+               let modifier;
+               if(redBox.posX + redBox.width >= el.posX && redBox.posX + redBox.width < el.posX + el.width){
+                  modifier = -4;
+               } else{
+                  modifier = 4;
+               }
+               redBox.initPosX = redBox.posX + modifier;
                redBox.startTimeX = (new Date()).getTime();
                redBox.velocityX = redBox.velocityX * (-1);
             }
