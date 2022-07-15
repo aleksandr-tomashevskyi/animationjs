@@ -2,12 +2,13 @@
 
 const boxElements = document.querySelectorAll(".box");
 const boxContainersElements = document.querySelectorAll(".box-container")
-// let containerWidth = window.innerWidth;
-// let containerHeight = window.innerHeight;
+// let containerWidth = window.innerWidth; //legacy
+// let containerHeight = window.innerHeight; //legacy
 let generatedInitPositionsX = [];
 let generatedInitPositionsY = [];
 let boxes = [];
 let boxContainers = [];
+
 
 class box{
    constructor(index, parentIndex, className, height, width, velocityY, velocityX, initPosX, initPosY, startTimeX, startTimeY, posX, posY, currentTimeX, currentTimeY){
@@ -39,6 +40,19 @@ class boxContainer{
       this.offsetY = offsetY
    }
 }
+
+function containerResizeCheck(){
+   boxContainers.forEach((el) =>{
+      if(el.height != boxContainersElements[el.index].offsetHeight || el.width != boxContainersElements[el.index].offsetWidth || el.offsetX != getContainerXPos(boxContainersElements[el.index]) || el.offsetY != getContainerYPos(boxContainersElements[el.index])){
+         el.height = boxContainersElements[el.index].offsetHeight;
+         el.width = boxContainersElements[el.index].offsetWidth;
+         el.offsetX = getContainerXPos(boxContainersElements[el.index]);
+         el.offsetY = getContainerYPos(boxContainersElements[el.index])
+         console.log("Container has been resized")
+      }
+   })
+}
+
 function getContainerXPos(el){
    return el.getBoundingClientRect().left
 }
@@ -51,15 +65,18 @@ function generateAndRoundVelocity(){
    return Number((Math.random()*0.1)+0.1).toFixed(2);
 }
 
-function checkCollision(redBox, el, containerWidth, containerHeight){
+function checkCollision(redBox, el, containerWidth, containerHeight){ //check collisions function for initial positions only
    let checkResult = false;
-   if(redBox.index != el.index){
-      if(((redBox.initPosX + redBox.width >= el.initPosX && redBox.initPosX <= el.initPosX + el.width) && redBox.initPosY + redBox.height >= el.initPosY && redBox.initPosY <= el.initPosY + el.height)){
-         checkResult = true;
-      }
-      if(redBox.initPosX + redBox.width >= containerWidth || redBox.initPosX <= 0 || redBox.initPosY + redBox.height >= containerHeight|| redBox.initPosY <= 0){
-         console.log("Check for container failed")
-         checkResult = true;
+   if(redBox.parentIndex == el.parentIndex){
+      if(redBox.index != el.index){
+         if(((redBox.initPosX + redBox.width >= el.initPosX && redBox.initPosX <= el.initPosX + el.width) && redBox.initPosY + redBox.height >= el.initPosY && redBox.initPosY <= el.initPosY + el.height)){
+            console.log("Check for container failed")
+            checkResult = true;
+         }
+         if(redBox.initPosX + redBox.width >= containerWidth || redBox.initPosX <= 0 || redBox.initPosY + redBox.height >= containerHeight|| redBox.initPosY <= 0){
+            console.log("Check for container failed")
+            checkResult = true;
+         }
       }
    }
    return checkResult;
@@ -74,12 +91,11 @@ function boxInstance(el, parentIndex){
    let newClassName = `box-${boxes.length}`;
    el.classList.toggle(newClassName);
    // let varNameIndex = `${i}`;
-   boxes.push(new box(boxes.length, parentIndex, newClassName, el.offsetHeight, el.offsetWidth, generateAndRoundVelocity(), generateAndRoundVelocity(), generateInitPos(boxContainers[parentIndex].width), generateInitPos(boxContainers[parentIndex].width), (new Date()).getTime(), (new Date()).getTime()));
+   boxes.push(new box(boxes.length, parentIndex, newClassName, el.offsetHeight, el.offsetWidth, generateAndRoundVelocity(), generateAndRoundVelocity(), generateInitPos(boxContainers[parentIndex].width), generateInitPos(boxContainers[parentIndex].width), Date.now(), Date.now()));
 }
 
 function boxContainerInstance(el, i){
    let childrenBoxes = el.querySelectorAll('.box');
-   console.log(el.querySelectorAll('.box'));
    let newClassName = `box-container-${i}`;
    el.classList.toggle(newClassName);
    boxContainers.push(new boxContainer(i, newClassName, el.offsetHeight, el.offsetWidth, getContainerXPos(el), getContainerYPos(el)))
@@ -88,9 +104,7 @@ function boxContainerInstance(el, i){
 
 function checkInitsForCollisions(){
    let checkResult = true;
-   console.log(boxes)
-   boxes.forEach((redBox, iR)=>{
-      console.log("check")
+   boxes.forEach((redBox)=>{
       boxes.forEach((el, i)=>{
          if(checkCollision(redBox, el, boxContainers[redBox.parentIndex].width, boxContainers[redBox.parentIndex].height)){
             redBox.initPosX = generateInitPos(boxContainers[redBox.parentIndex].width);
@@ -104,36 +118,19 @@ function checkInitsForCollisions(){
 }
 
 
-console.log("This is the boxElements", boxElements)
 function init(){
    boxContainersElements.forEach(boxContainerInstance);
    while(!checkInitsForCollisions()){
       checkInitsForCollisions()
    }
    boxes.forEach((redBox) =>{
-      console.log(redBox)
       boxElements[redBox.index].style.transform=`translate(${redBox.initPosX}px, ${redBox.initPosY}px)`;
-      console.log(boxContainers[redBox.parentIndex].offsetY)
    })
 }
 
 init();
-console.log("Boxes array:", boxContainers);
 
-
-function boxMovement(){
-   boxes.forEach((redBox) =>{
-      redBox.currentTimeX = (new Date()).getTime() - redBox.startTimeX; 
-      redBox.currentTimeY = (new Date()).getTime() - redBox.startTimeY; 
-      redBox.posX = redBox.initPosX + (redBox.velocityX*redBox.currentTimeX);
-      redBox.posY = redBox.initPosY + (redBox.velocityY*redBox.currentTimeY);
-      collisionToContainer(redBox);
-      collisionToOthers(redBox);
-      boxElements[redBox.index].style.transform=`translate(${redBox.posX}px, ${redBox.posY}px)`;
-   })
-}
-
-function collisionToContainer(redBox){
+function collisionToContainer(redBox, timestamp){
    if(redBox.posX + redBox.width >= boxContainers[redBox.parentIndex].width  || redBox.posX <= 1){
       let modifier;
       if(redBox.posX + redBox.width >= boxContainers[redBox.parentIndex].width){
@@ -142,7 +139,7 @@ function collisionToContainer(redBox){
          modifier = 2;
       }
       redBox.initPosX = redBox.posX + modifier;
-      redBox.startTimeX = (new Date()).getTime();
+      redBox.startTimeX = timestamp;
       redBox.velocityX = redBox.velocityX * (-1);
    }
    if(redBox.posY + redBox.height >= boxContainers[redBox.parentIndex].height || redBox.posY <= 1){
@@ -154,12 +151,12 @@ function collisionToContainer(redBox){
       }
       // console.log("collision Y detected")
       redBox.initPosY = redBox.posY + modifier;
-      redBox.startTimeY = (new Date()).getTime();
+      redBox.startTimeY = timestamp;
       redBox.velocityY = redBox.velocityY * (-1);
    }
 }
 
-function collisionToOthers(redBox){
+function collisionToOthers(redBox, timestamp){
    boxes.forEach((el) =>{
       if(redBox.parentIndex == el.parentIndex){
          if(redBox.index != el.index){
@@ -172,9 +169,8 @@ function collisionToOthers(redBox){
                      modifier = 2;
                   }
                   redBox.initPosY = redBox.posY + modifier;
-                  redBox.startTimeY = (new Date()).getTime();
+                  redBox.startTimeY = timestamp;
                   redBox.velocityY = redBox.velocityY * (-1);
-                  console.log("collision Y detected")
                   
                } else{
                   let modifier;
@@ -184,15 +180,44 @@ function collisionToOthers(redBox){
                      modifier = 2;
                   }
                   redBox.initPosX = redBox.posX + modifier;
-                  redBox.startTimeX = (new Date()).getTime();
+                  redBox.startTimeX = timestamp;
                   redBox.velocityX = redBox.velocityX * (-1);
-                  console.log("collision X detected")
                }
             }
          }
       }
    })
-   
 }
 
-window.setInterval(boxMovement, 30);
+function boxMovement(){
+   containerResizeCheck();
+   console.log(timeFreezer)
+   boxes.forEach((redBox) =>{
+      redBox.currentTimeX = Date.now() - redBox.startTimeX - timeFreezer; 
+      redBox.currentTimeY = Date.now() - redBox.startTimeY - timeFreezer; 
+      redBox.posX = redBox.initPosX + (redBox.velocityX*redBox.currentTimeX);
+      redBox.posY = redBox.initPosY + (redBox.velocityY*redBox.currentTimeY);
+      collisionToContainer(redBox, (Date.now() - timeFreezer));
+      collisionToOthers(redBox, (Date.now() - timeFreezer));
+      boxElements[redBox.index].style.transform=`translate(${redBox.posX}px, ${redBox.posY}px)`;
+   })
+   window.requestAnimationFrame(boxMovement)
+}
+
+let timeFreezer = 0;
+let timeStopStamp = 0;
+
+function visibilityChange(){
+   if(document.hidden){
+      timeStopStamp = Date.now();
+      window.cancelAnimationFrame(boxMovement)
+   } else{
+      timeFreezer = timeFreezer + Date.now() - timeStopStamp;
+   }
+}
+
+window.requestAnimationFrame(boxMovement)
+
+window.addEventListener("visibilitychange", visibilityChange)
+
+
