@@ -86,20 +86,21 @@ function generateInitPos(containerParam){
    return Math.round((Math.random()*containerParam*0.85));   
 }
 
-function boxInstance(el, parentIndex){
+function boxInstance(el, parentIndex, timestamp){
    // let containerWidth = el.parentElement;
    let newClassName = `box-${boxes.length}`;
    el.classList.toggle(newClassName);
    // let varNameIndex = `${i}`;
-   boxes.push(new box(boxes.length, parentIndex, newClassName, el.offsetHeight, el.offsetWidth, generateAndRoundVelocity(), generateAndRoundVelocity(), generateInitPos(boxContainers[parentIndex].width), generateInitPos(boxContainers[parentIndex].width), Date.now(), Date.now()));
+   boxes.push(new box(boxes.length, parentIndex, newClassName, el.offsetHeight, el.offsetWidth, generateAndRoundVelocity(), generateAndRoundVelocity(), generateInitPos(boxContainers[parentIndex].width), generateInitPos(boxContainers[parentIndex].width), timestamp, timestamp));
 }
 
-function boxContainerInstance(el, i){
+function boxContainerInstance(el, i, timestamp){
+   console.log(timestamp)
    let childrenBoxes = el.querySelectorAll('.box');
    let newClassName = `box-container-${i}`;
    el.classList.toggle(newClassName);
    boxContainers.push(new boxContainer(i, newClassName, el.offsetHeight, el.offsetWidth, getContainerXPos(el), getContainerYPos(el)))
-   childrenBoxes.forEach((el) => boxInstance(el, i)); //creating box instances for each box container
+   childrenBoxes.forEach((el) => boxInstance(el, i, timestamp)); //creating box instances for each box container
 }
 
 function checkInitsForCollisions(){
@@ -118,17 +119,18 @@ function checkInitsForCollisions(){
 }
 
 
-function init(){
-   boxContainersElements.forEach(boxContainerInstance);
+function init(timestamp){
+   console.log(timestamp)
+   boxContainersElements.forEach((el, i)=> boxContainerInstance(el, i, timestamp));
    while(!checkInitsForCollisions()){
       checkInitsForCollisions()
    }
    boxes.forEach((redBox) =>{
       boxElements[redBox.index].style.transform=`translate(${redBox.initPosX}px, ${redBox.initPosY}px)`;
    })
+   window.requestAnimationFrame(boxMovement)
 }
 
-init();
 
 function collisionToContainer(redBox, timestamp){
    if(redBox.posX + redBox.width >= boxContainers[redBox.parentIndex].width  || redBox.posX <= 1){
@@ -189,16 +191,16 @@ function collisionToOthers(redBox, timestamp){
    })
 }
 
-function boxMovement(){
+function boxMovement(timestamp){
    containerResizeCheck();
    console.log(timeFreezer)
    boxes.forEach((redBox) =>{
-      redBox.currentTimeX = Date.now() - redBox.startTimeX - timeFreezer; 
-      redBox.currentTimeY = Date.now() - redBox.startTimeY - timeFreezer; 
+      redBox.currentTimeX = timestamp - redBox.startTimeX - timeFreezer; 
+      redBox.currentTimeY = timestamp - redBox.startTimeY - timeFreezer; 
       redBox.posX = redBox.initPosX + (redBox.velocityX*redBox.currentTimeX);
       redBox.posY = redBox.initPosY + (redBox.velocityY*redBox.currentTimeY);
-      collisionToContainer(redBox, (Date.now() - timeFreezer));
-      collisionToOthers(redBox, (Date.now() - timeFreezer));
+      collisionToContainer(redBox, (timestamp - timeFreezer));
+      collisionToOthers(redBox, (timestamp - timeFreezer));
       boxElements[redBox.index].style.transform=`translate(${redBox.posX}px, ${redBox.posY}px)`;
    })
    window.requestAnimationFrame(boxMovement)
@@ -215,9 +217,7 @@ function visibilityChange(){
       timeFreezer = timeFreezer + Date.now() - timeStopStamp;
    }
 }
+window.requestAnimationFrame(init)
 
-window.requestAnimationFrame(boxMovement)
 
 window.addEventListener("visibilitychange", visibilityChange)
-
-
